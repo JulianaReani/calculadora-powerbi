@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    <title>Calculadora de Precificação Premium - Power BI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .tab.active {
+            background: white;
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+        }
+
+        .result-card h3 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .result-card p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .pricing-packages {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .package {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .package:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .package.recommended {
+            border-color: #3498db;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
+        }
+
+        .package.recommended::before {
+            content: "RECOMENDADO";
+            position: absolute;
+            top: 15px;
+            right: -30px;
+            background: #3498db;
+            color: white;
+            padding: 5px 40px;
+            font-size: 12px;
+            font-weight: bold;
+            transform: rotate(45deg);
+        }
+
+        .package h4 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+
+        .package .price {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+
+        .package ul {
+            list-style: none;
+            text-align: left;
+        }
+
+        .package ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .package ul li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .calculate-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .range-input {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .range-value {
+            text-align: center;
+            font-weight: bold;
+            color: #3498db;
+            margin-top: 5px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #3498db;
+            margin-left: 5px;
+        }
+
+        .info-tooltip::after {
+            content: "?";
+            width: 16px;
+            height: 16px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            text-align: center;
+            line-height: 16px;
+        }
+
+        .roi-chart {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .export-panel {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .export-panel h3 {
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .export-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+        }
+
+        .btn-save {
+            background: #27ae60;
+            color: white;
+        }
+
+        .export-info {
+            color: white;
+            opacity: 0.9;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .pricing-packages {
+                grid-template-columns: 1fr;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .export-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Calculadora de Precificação Premium</h1>
+            <p>Transforme suas habilidades em Power BI em um negócio lucrativo</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab(0)">⚙️ Configurações</button>
+            <button class="tab" onclick="showTab(1)">📊 Análise de Projeto</button>
+            <button class="tab" onclick="showTab(2)">💰 Valor Percebido</button>
+            <button class="tab" onclick="showTab(3)">📋 Modelos de Cobrança</button>
+            <button class="tab" onclick="showTab(4)">💼 ROI do Cliente</button>
+        </div>
+
+        <!-- Aba 1: Configurações -->
+        <div class="tab-content active">
+            <div class="card">
+                <h3>📋 Dados Profissionais</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nível de Experiência</label>
+                        <select id="experiencia" onchange="updateBaseValues()">
+                            <option value="iniciante">Iniciante (0-2 anos)</option>
+                            <option value="intermediario">Intermediário (2-5 anos)</option>
+                            <option value="avancado">Avançado (5+ anos)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Região de Atuação</label>
+                        <select id="regiao" onchange="updateBaseValues()">
+                            <option value="sudeste">Sudeste</option>
+                            <option value="sul">Sul</option>
+                            <option value="nordeste">Nordeste</option>
+                            <option value="centro-oeste">Centro-Oeste</option>
+                            <option value="norte">Norte</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Áreas de Especialização</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dax" value="dax">
+                            <label for="dax">DAX Avançado</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="modelagem" value="modelagem">
+                            <label for="modelagem">Modelagem de Dados</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="etl" value="etl">
+                            <label for="etl">ETL/Power Query</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="visualizacao" value="visualizacao">
+                            <label for="visualizacao">Visualizações Avançadas</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <h3 id="valorBase">R$ 100/hora</h3>
+                <p>Valor base recomendado para seu perfil</p>
+            </div>
+        </div>
+
+        <!-- Aba 2: Análise de Projeto -->
+        <div class="tab-content">
+            <div class="card">
+                <h3>📊 Complexidade do Projeto</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Número de Fontes de Dados</label>
+                        <input type="range" id="fontesDados" min="1" max="10" value="3" class="range-input" oninput="updateRangeValue(this, 'fontesValue')">
+                        <div class="range-value" id="fontesValue">3</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Complexidade da Modelagem</label>
+                        <select id="complexidadeModelagem">
+                            <option value="baixa">Baixa (Tabelas simples)</option>
+                            <option value="media">Média (Relacionamentos básicos)</option>
+                            <option value="alta">Alta (Star Schema complexo)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantidade de Visualizações</label>
+                        <input type="range" id="visualizacoes" min="5" max="50" value="15" class="range-input" oninput="updateRangeValue(this, 'vizValue')">
+                        <div class="range-value" id="vizValue">15</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cálculos DAX Avançados</label>
+                        <select id="daxAvancado">
+                            <option value="nao">Não</option>
+                            <option value="sim">Sim</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prazo de Entrega (dias)</label>
+                        <input type="range" id="prazo" min="1" max="60" value="15" class="range-input" oninput="updateRangeValue(this, 'prazoValue')">
+                        <div class="range-value" id="prazoValue">15</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nível de Automatização</label>
+                        <select id="automacao">
+                            <option value="basico">Básico (Atualização manual)</option>
+                            <option value="medio">Médio (Agendamento simples)</option>
+                            <option value="avancado">Avançado (Gateway e automação total)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateComplexity()">📊 Calcular Complexidade</button>
+            
+            <div id="complexityResult" class="result-card" style="display: none;">
+                <h3 id="complexityScore">0</h3>
+                <p>Pontuação de complexidade</p>
+            </div>
+        </div>
+
+        <!-- Aba 3: Valor Percebido -->
+        <div class="tab-content">
+            <div class="card">
+                <h3>💰 Impacto Financeiro</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Economia mensal estimada para o cliente (R$)</label>
+                        <input type="number" id="economia" placeholder="Ex: 10000" value="10000">
+                    </div>
+                    <div class="form-group">
+                        <label>Potencial de aumento de receita (R$)</label>
+                        <input type="number" id="receita" placeholder="Ex: 50000" value="50000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Horas de trabalho manual eliminadas por mês</label>
+                        <input type="number" id="horasEliminadas" placeholder="Ex: 40" value="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Custo hora do funcionário (R$)</label>
+                        <input type="number" id="custoHora" placeholder="Ex: 50" value="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Nível hierárquico dos usuários</label>
+                    <select id="nivelHierarquico">
+                        <option value="operacional">Operacional</option>
+                        <option value="gerencial">Gerencial</option>
+                        <option value="diretoria">Diretoria</option>
+                        <option value="presidencia">Presidência</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculatePerceivedValue()">💎 Calcular Valor Percebido</button>
+            
+            <div id="perceivedValueResult" class="result-card" style="display: none;">
+                <h3 id="perceivedValueAmount">R$ 0</h3>
+                <p>Valor percebido mensal</p>
+            </div>
+        </div>
+
+        <!-- Aba 4: Modelos de Cobrança -->
+        <div class="tab-content">
+            <div class="card">
+                <h3>📋 Parâmetros do Projeto</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Horas estimadas de trabalho</label>
+                        <input type="number" id="horasTrabalho" placeholder="Ex: 40" value="40">
+                    </div>
+                    <div class="form-group">
+                        <label>Valor hora base (R$)</label>
+                        <input type="number" id="valorHoraBase" placeholder="Ex: 120" value="120">
+                    </div>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculatePricingModels()">💰 Gerar Modelos de Cobrança</button>
+            
+            <div id="pricingModels" class="pricing-packages" style="display: none;">
+                <div class="package">
+                    <h4>📦 Essencial</h4>
+                    <div class="price" id="essentialPrice">R$ 0</div>
+                    <ul>
+                        <li>Dashboard básico</li>
+                        <li>Até 3 fontes de dados</li>
+                        <li>Visualizações padrão</li>
+                        <li>Suporte por 30 dias</li>
+                    </ul>
+                </div>
+                <div class="package recommended">
+                    <h4>🏆 Profissional</h4>
+                    <div class="price" id="professionalPrice">R$ 0</div>
+                    <ul>
+                        <li>Dashboard completo</li>
+                        <li>Até 7 fontes de dados</li>
+                        <li>Visualizações avançadas</li>
+                        <li>Cálculos DAX básicos</li>
+                        <li>Suporte por 60 dias</li>
+                        <li>1 revisão gratuita</li>
+                    </ul>
+                </div>
+                <div class="package">
+                    <h4>💎 Enterprise</h4>
+                    <div class="price" id="enterprisePrice">R$ 0</div>
+                    <ul>
+                        <li>Solução completa</li>
+                        <li>Fontes ilimitadas</li>
+                        <li>Visualizações customizadas</li>
+                        <li>DAX avançado</li>
+                        <li>Automação total</li>
+                        <li>Suporte por 90 dias</li>
+                        <li>3 revisões gratuitas</li>
+                        <li>Treinamento incluído</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba 5: ROI do Cliente -->
+        <div class="tab-content">
+            <div class="card">
+                <h3>📈 Dados de ROI</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Investimento no projeto (R$)</label>
+                        <input type="number" id="investimento" placeholder="Ex: 8000" value="8000">
+                    </div>
+                    <div class="form-group">
+                        <label>Economia mensal gerada (R$)</label>
+                        <input type="number" id="economiaRoi" placeholder="Ex: 5000" value="5000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Aumento de receita mensal (R$)</label>
+                        <input type="number" id="receitaRoi" placeholder="Ex: 3000" value="3000">
+                    </div>
+                    <div class="form-group">
+                        <label>Custos operacionais mensais (R$)</label>
+                        <input type="number" id="custosRoi" placeholder="Ex: 500" value="500">
+                    </div>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateROI()">📊 Calcular ROI</button>
+            
+            <div id="roiResults" style="display: none;">
+                <div class="roi-chart">
+                    <h3>📈 Projeção de ROI</h3>
+                    <div id="roiChart"></div>
+                </div>
+                <div class="form-row">
+                    <div class="result-card">
+                        <h3 id="roi6months">0%</h3>
+                        <p>ROI em 6 meses</p>
+                    </div>
+                    <div class="result-card">
+                        <h3 id="roi12months">0%</h3>
+                        <p>ROI em 12 meses</p>
+                    </div>
+                    <div class="result-card">
+                        <h3 id="roi24months">0%</h3>
+                        <p>ROI em 24 meses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Exportação -->
+        <div class="export-panel">
+            <h3>📋 Exportar Calculadora Completa</h3>
+            <div class="export-buttons">
+                <button class="export-btn btn-excel" onclick="window.exportCompleteExcel()">
+                    📊 Exportar
+                </button>
+                <button class="export-btn btn-save" onclick="window.saveConfiguration()">
+                    💾 Salvar Configurações
+                </button>
+            </div>
+            <div class="export-info">
+                <p><strong>📊 Exportar:</strong> Gera arquivo Excel profissional com Dashboard Executivo + Configurações + Modelos + ROI + Proposta Comercial</p>
+                <p><strong>💾 Salvar:</strong> Armazena suas configurações para uso futuro</p>
+                <p>✨ <strong>5 abas profissionais</strong> com layout visual e proposta comercial completa!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // VARIÁVEIS E CONFIGURAÇÕES GLOBAIS
+        // ========================================
+        
+        // Garantir que as funções sejam globais
+        window.exportCompleteExcel = exportCompleteExcel;
+        window.testarFuncao = testarFuncao;
+        window.saveConfiguration = saveConfiguration;
+        
+        let baseValues = {
+            iniciante: { sudeste: 80, sul: 70, nordeste: 60, 'centro-oeste': 65, norte: 55 },
+            intermediario: { sudeste: 120, sul: 110, nordeste: 90, 'centro-oeste': 100, norte: 85 },
+            avancado: { sudeste: 180, sul: 160, nordeste: 130, 'centro-oeste': 140, norte: 120 }
+        };
+
+        // ========================================
+        // FUNÇÕES DE TESTE E NAVEGAÇÃO
+        // ========================================
+        
+        function testarFuncao() {
+            try {
+                console.log('🧪 Testando sistema...');
+                
+                // Teste 1: Verificar XLSX
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('Biblioteca XLSX não encontrada');
+                }
+                console.log('✅ XLSX OK');
+                
+                // Teste 2: Verificar elementos DOM
+                const elementos = ['experiencia', 'regiao', 'valorHoraBase'];
+                for (let id of elementos) {
+                    if (!document.getElementById(id)) {
+                        throw new Error(`Elemento ${id} não encontrado`);
+                    }
+                }
+                console.log('✅ DOM OK');
+                
+                // Teste 3: Executar cálculos
+                updateBaseValues();
+                calculateComplexity();
+                calculatePerceivedValue();
+                calculatePricingModels();
+                calculateROI();
+                console.log('✅ Cálculos OK');
+                
+                showNotification('🎉 Sistema testado com sucesso! Todas as funções operacionais.', 'success');
+                
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
+                showNotification(`❌ Erro encontrado: ${error.message}`, 'error');
+            }
+        }
+
+        function showTab(tabIndex) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, index) => {
+                tab.classList.toggle('active', index === tabIndex);
+            });
+            
+            contents.forEach((content, index) => {
+                content.classList.toggle('active', index === tabIndex);
+            });
+        }
+
+        // ========================================
+        // FUNÇÕES DE CÁLCULO PRINCIPAIS
+        // ========================================
+        
+        function updateBaseValues() {
+            const experiencia = document.getElementById('experiencia').value;
+            const regiao = document.getElementById('regiao').value;
+            const especialidades = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            
+            let valorBase = baseValues[experiencia][regiao];
+            valorBase += especialidades * 20;
+            
+            document.getElementById('valorBase').textContent = `R$ ${valorBase}/hora`;
+            document.getElementById('valorHoraBase').value = valorBase;
+        }
+
+        function updateRangeValue(element, targetId) {
+            document.getElementById(targetId).textContent = element.value;
+        }
+
+        function calculateComplexity() {
+            const fontes = parseInt(document.getElementById('fontesDados').value);
+            const modelagem = document.getElementById('complexidadeModelagem').value;
+            const visualizacoes = parseInt(document.getElementById('visualizacoes').value);
+            const dax = document.getElementById('daxAvancado').value;
+            const prazo = parseInt(document.getElementById('prazo').value);
+            const automacao = document.getElementById('automacao').value;
+            
+            let score = 0;
+            
+            // Pontuação por fontes de dados
+            score += fontes * 10;
+            
+            // Pontuação por complexidade de modelagem
+            const modelagemScores = { baixa: 20, media: 40, alta: 80 };
+            score += modelagemScores[modelagem];
+            
+            // Pontuação por visualizações
+            score += visualizacoes * 2;
+            
+            // Pontuação por DAX
+            if (dax === 'sim') score += 50;
+            
+            // Pontuação por prazo (urgência)
+            if (prazo <= 7) score += 100;
+            else if (prazo <= 15) score += 50;
+            else if (prazo <= 30) score += 20;
+            
+            // Pontuação por automação
+            const automacaoScores = { basico: 10, medio: 30, avancado: 60 };
+            score += automacaoScores[automacao];
+            
+            document.getElementById('complexityScore').textContent = score;
+            document.getElementById('complexityResult').style.display = 'block';
+        }
+
+        function calculatePerceivedValue() {
+            const economia = parseFloat(document.getElementById('economia').value) || 0;
+            const receita = parseFloat(document.getElementById('receita').value) || 0;
+            const horasEliminadas = parseFloat(document.getElementById('horasEliminadas').value) || 0;
+            const custoHora = parseFloat(document.getElementById('custoHora').value) || 0;
+            const nivel = document.getElementById('nivelHierarquico').value;
+            
+            let valorPercebido = economia + receita + (horasEliminadas * custoHora);
+            
+            const multiplicadores = {
+                operacional: 1.0,
+                gerencial: 1.5,
+                diretoria: 2.0,
+                presidencia: 3.0
+            };
+            
+            valorPercebido *= multiplicadores[nivel];
+            
+            document.getElementById('perceivedValueAmount').textContent = `R$ ${valorPercebido.toLocaleString('pt-BR')}`;
+            document.getElementById('perceivedValueResult').style.display = 'block';
+        }
+
+        function calculatePricingModels() {
+            const horas = parseFloat(document.getElementById('horasTrabalho').value) || 0;
+            const valorHora = parseFloat(document.getElementById('valorHoraBase').value) || 0;
+            
+            const valorBase = horas * valorHora;
+            
+            const essencial = Math.round(valorBase * 0.7);
+            const profissional = Math.round(valorBase);
+            const enterprise = Math.round(valorBase * 1.5);
+            
+            document.getElementById('essentialPrice').textContent = `R$ ${essencial.toLocaleString('pt-BR')}`;
+            document.getElementById('professionalPrice').textContent = `R$ ${profissional.toLocaleString('pt-BR')}`;
+            document.getElementById('enterprisePrice').textContent = `R$ ${enterprise.toLocaleString('pt-BR')}`;
+            
+            document.getElementById('pricingModels').style.display = 'grid';
+        }
+
+        function calculateROI() {
+            const investimento = parseFloat(document.getElementById('investimento').value) || 0;
+            const economia = parseFloat(document.getElementById('economiaRoi').value) || 0;
+            const receita = parseFloat(document.getElementById('receitaRoi').value) || 0;
+            const custos = parseFloat(document.getElementById('custosRoi').value) || 0;
+            
+            const beneficioMensal = economia + receita - custos;
+            
+            const roi6 = ((beneficioMensal * 6 - investimento) / investimento * 100).toFixed(1);
+            const roi12 = ((beneficioMensal * 12 - investimento) / investimento * 100).toFixed(1);
+            const roi24 = ((beneficioMensal * 24 - investimento) / investimento * 100).toFixed(1);
+            
+            document.getElementById('roi6months').textContent = `${roi6}%`;
+            document.getElementById('roi12months').textContent = `${roi12}%`;
+            document.getElementById('roi24months').textContent = `${roi24}%`;
+            
+            createROIChart(investimento, beneficioMensal);
+            document.getElementById('roiResults').style.display = 'block';
+        }
+
+        function createROIChart(investimento, beneficioMensal) {
+            const chartContainer = document.getElementById('roiChart');
+            
+            let chartHTML = '<div style="display: flex; align-items: end; height: 200px; gap: 10px; justify-content: space-around; background: #f8f9fa; padding: 20px; border-radius: 8px;">';
+            
+            const meses = [6, 12, 24];
+            const maxValue = beneficioMensal * 24;
+            
+            meses.forEach(mes => {
+                const valor = beneficioMensal * mes;
+                const altura = (valor / maxValue) * 150;
+                const roi = ((valor - investimento) / investimento * 100).toFixed(1);
+                
+                chartHTML += `
+                    <div style="text-align: center;">
+                        <div style="background: linear-gradient(to top, #27ae60, #2ecc71); width: 60px; height: ${altura}px; margin-bottom: 10px; border-radius: 4px; display: flex; align-items: end; justify-content: center; color: white; font-weight: bold; font-size: 12px; padding: 5px 0;">
+                            ${roi}%
+                        </div>
+                        <div style="font-weight: bold; color: #2c3e50;">${mes} meses</div>
+                        <div style="color: #7f8c8d; font-size: 12px;">R$ ${valor.toLocaleString('pt-BR')}</div>
+                    </div>
+                `;
+            });
+            
+            chartHTML += '</div>';
+            chartHTML += `<div style="text-align: center; margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 8px; color: #27ae60;"><strong>Investimento inicial: R$ ${investimento.toLocaleString('pt-BR')}</strong></div>`;
+            
+            chartContainer.innerHTML = chartHTML;
+        }
+
+        // ========================================
+        // FUNÇÃO PRINCIPAL DE EXPORTAÇÃO EXCEL
+        // ========================================
+        
+        function exportCompleteExcel() {
+            try {
+                console.log('📊 Iniciando exportação...');
+                showNotification('📊 Gerando arquivo Excel com 5 abas formatadas...', 'info');
+                
+                // Verificar XLSX
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('Biblioteca XLSX não carregada!');
+                }
+                
+                // Atualizar todos os cálculos
+                updateBaseValues();
+                calculateComplexity();
+                calculatePerceivedValue();
+                calculatePricingModels();
+                calculateROI();
+                
+                // Criar workbook
+                const wb = XLSX.utils.book_new();
+                
+                // ABA 1: Dashboard Executivo
+                const dashboardData = [
+                    ['🚀 CALCULADORA DE PRECIFICAÇÃO PREMIUM - POWER BI', '', '', '', '', '', '', ''],
+                    ['Transforme suas habilidades em Power BI em um negócio lucrativo', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    [`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, '', '', '', '', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════════════════════════', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['🎯 RESUMO EXECUTIVO', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['👤 PERFIL PROFISSIONAL', '', '📊 PROJETO', '', '💰 PREÇOS', '', '📈 ROI', ''],
+                    ['═══════════════════════', '═══════════════════════', '═══════════════════════', '═══════════════════════', '═══════════════════════', '═══════════════════════', '═══════════════════════', '═══════════════════════'],
+                    [`Experiência: ${document.getElementById('experiencia').value}`, '', `Fontes: ${document.getElementById('fontesDados').value}`, '', `💵 Essencial: ${document.getElementById('essentialPrice')?.textContent || 'R$ 0'}`, '', `6M: ${document.getElementById('roi6months')?.textContent || '0%'}`, ''],
+                    [`Região: ${document.getElementById('regiao').value}`, '', `Visualizações: ${document.getElementById('visualizacoes').value}`, '', `💰 Profissional: ${document.getElementById('professionalPrice')?.textContent || 'R$ 0'} ⭐`, '', `12M: ${document.getElementById('roi12months')?.textContent || '0%'}`, ''],
+                    [`Valor/hora: R$ ${document.getElementById('valorHoraBase').value}`, '', `Prazo: ${document.getElementById('prazo').value} dias`, '', `💎 Enterprise: ${document.getElementById('enterprisePrice')?.textContent || 'R$ 0'}`, '', `24M: ${document.getElementById('roi24months')?.textContent || '0%'}`, ''],
+                    [`Especialidades: ${document.querySelectorAll('input[type="checkbox"]:checked').length}`, '', `Horas: ${document.getElementById('horasTrabalho').value}h`, '', `Complexidade: ${document.getElementById('complexityScore')?.textContent || '0'} pts`, '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════════════════════════', '', '', '', '', '', '', ''],
+                    ['💎 VALOR PERCEBIDO PELO CLIENTE', '', '', '', '', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════════════════════════', '', '', '', '', '', '', ''],
+                    [document.getElementById('perceivedValueAmount')?.textContent || 'R$ 0', 'por mês', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['🎯 ESTRATÉGIA DE APRESENTAÇÃO', '', '', '', '', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════════════════════════', '', '', '', '', '', '', ''],
+                    ['1️⃣ APRESENTAR OS 3 PACOTES (Essencial, Profissional, Enterprise)', '', '', '', '', '', '', ''],
+                    ['2️⃣ DESTACAR O PACOTE PROFISSIONAL COMO RECOMENDADO ⭐', '', '', '', '', '', '', ''],
+                    ['3️⃣ ENFATIZAR O ROI E VALOR PERCEBIDO PARA JUSTIFICAR INVESTIMENTO', '', '', '', '', '', '', ''],
+                    ['4️⃣ INCLUIR PRAZO DE ENTREGA E CONDIÇÕES DE PAGAMENTO', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['✅ RELATÓRIO GERADO PELO SISTEMA PREMIUM DE PRECIFICAÇÃO POWER BI', '', '', '', '', '', '', '']
+                ];
+                
+                const wsDashboard = XLSX.utils.aoa_to_sheet(dashboardData);
+                wsDashboard['!cols'] = [
+                    { wch: 40 }, { wch: 8 }, { wch: 30 }, { wch: 5 }, { wch: 35 }, { wch: 5 }, { wch: 20 }, { wch: 5 }
+                ];
+                
+                // Mesclar células para layout
+                wsDashboard['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+                    { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } },
+                    { s: { r: 4, c: 0 }, e: { r: 4, c: 7 } },
+                    { s: { r: 6, c: 0 }, e: { r: 6, c: 7 } },
+                    { s: { r: 15, c: 0 }, e: { r: 15, c: 7 } },
+                    { s: { r: 16, c: 0 }, e: { r: 16, c: 7 } },
+                    { s: { r: 17, c: 0 }, e: { r: 17, c: 7 } },
+                    { s: { r: 18, c: 0 }, e: { r: 18, c: 2 } },
+                    { s: { r: 20, c: 0 }, e: { r: 20, c: 7 } },
+                    { s: { r: 21, c: 0 }, e: { r: 21, c: 7 } },
+                    { s: { r: 22, c: 0 }, e: { r: 22, c: 7 } },
+                    { s: { r: 23, c: 0 }, e: { r: 23, c: 7 } },
+                    { s: { r: 24, c: 0 }, e: { r: 24, c: 7 } },
+                    { s: { r: 25, c: 0 }, e: { r: 25, c: 7 } },
+                    { s: { r: 26, c: 0 }, e: { r: 26, c: 7 } }
+                ];
+                
+                XLSX.utils.book_append_sheet(wb, wsDashboard, '🎯 Dashboard Executivo');
+                
+                // ABA 2: Configurações
+                const configData = [
+                    ['⚙️ CONFIGURAÇÕES PROFISSIONAIS', '', '', ''],
+                    ['', '', '', ''],
+                    ['📋 Dados do Profissional', '', '', ''],
+                    ['Nível de Experiência:', document.getElementById('experiencia').value, '', ''],
+                    ['Região de Atuação:', document.getElementById('regiao').value, '', ''],
+                    ['Valor Base por Hora:', `R$ ${document.getElementById('valorHoraBase').value}`, '', ''],
+                    ['', '', '', ''],
+                    ['🎯 Especialidades Selecionadas', '', '', ''],
+                    ['DAX Avançado:', document.getElementById('dax').checked ? '✅ SIM' : '❌ NÃO', '', ''],
+                    ['Modelagem de Dados:', document.getElementById('modelagem').checked ? '✅ SIM' : '❌ NÃO', '', ''],
+                    ['ETL/Power Query:', document.getElementById('etl').checked ? '✅ SIM' : '❌ NÃO', '', ''],
+                    ['Visualizações Avançadas:', document.getElementById('visualizacao').checked ? '✅ SIM' : '❌ NÃO', '', ''],
+                    ['', '', '', ''],
+                    ['📊 Tabela de Valores Base por Região/Experiência', '', '', ''],
+                    ['', 'Iniciante', 'Intermediário', 'Avançado'],
+                    ['Sudeste', 'R$ 80', 'R$ 120', 'R$ 180'],
+                    ['Sul', 'R$ 70', 'R$ 110', 'R$ 160'],
+                    ['Nordeste', 'R$ 60', 'R$ 90', 'R$ 130'],
+                    ['Centro-Oeste', 'R$ 65', 'R$ 100', 'R$ 140'],
+                    ['Norte', 'R$ 55', 'R$ 85', 'R$ 120'],
+                    ['', '', '', ''],
+                    ['💡 Bônus por Especialização: +R$ 20/hora por área', '', '', '']
+                ];
+                
+                const wsConfig = XLSX.utils.aoa_to_sheet(configData);
+                wsConfig['!cols'] = [{ wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
+                XLSX.utils.book_append_sheet(wb, wsConfig, '⚙️ Configurações');
+                
+                // ABA 3: Modelos de Cobrança
+                const modelosData = [
+                    ['📋 MODELOS DE COBRANÇA - TÉCNICA DOS 3 NÍVEIS', '', '', '', '', ''],
+                    ['', '', '', '', '', ''],
+                    ['📊 Parâmetros do Projeto', '', '', '', '', ''],
+                    ['Horas Estimadas:', `${document.getElementById('horasTrabalho').value}h`, '', '', '', ''],
+                    ['Valor Hora Base:', `R$ ${document.getElementById('valorHoraBase').value}`, '', '', '', ''],
+                    ['Valor Total Base:', `R$ ${(parseFloat(document.getElementById('horasTrabalho').value || 0) * parseFloat(document.getElementById('valorHoraBase').value || 0)).toLocaleString('pt-BR')}`, '', '', '', ''],
+                    ['', '', '', '', '', ''],
+                    ['💰 PACOTES DE PREÇOS', '', '', '', '', ''],
+                    ['', '', '', '', '', ''],
+                    ['📦 ESSENCIAL', '🏆 PROFISSIONAL ⭐', '💎 ENTERPRISE', '', '', ''],
+                    ['(70% do valor base)', '(100% do valor base)', '(150% do valor base)', '', '', ''],
+                    [document.getElementById('essentialPrice')?.textContent || 'R$ 0', document.getElementById('professionalPrice')?.textContent || 'R$ 0', document.getElementById('enterprisePrice')?.textContent || 'R$ 0', '', '', ''],
+                    ['', '', '', '', '', ''],
+                    ['📋 FUNCIONALIDADES INCLUÍDAS', '', '', '', '', ''],
+                    ['', 'Essencial', 'Profissional', 'Enterprise', '', ''],
+                    ['Dashboard', 'Básico', 'Completo', 'Completo + Custom', '', ''],
+                    ['Fontes de Dados', 'Até 3', 'Até 7', 'Ilimitadas', '', ''],
+                    ['Visualizações', 'Padrão', 'Avançadas', 'Customizadas', '', ''],
+                    ['Cálculos DAX', 'Básicos', 'Intermediários', 'Avançados', '', ''],
+                    ['Suporte (dias)', '30', '60', '90', '', ''],
+                    ['Revisões Gratuitas', '0', '1', '3', '', ''],
+                    ['Treinamento', 'Não', 'Básico', 'Completo', '', ''],
+                    ['', '', '', '', '', ''],
+                    ['💡 RECOMENDAÇÃO: Pacote Profissional oferece melhor custo-benefício', '', '', '', '', '']
+                ];
+                
+                const wsModelos = XLSX.utils.aoa_to_sheet(modelosData);
+                wsModelos['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 10 }, { wch: 10 }];
+                XLSX.utils.book_append_sheet(wb, wsModelos, '📋 Modelos de Cobrança');
+                
+                // ABA 4: ROI do Cliente
+                const investimento = parseFloat(document.getElementById('investimento').value || 0);
+                const economiaRoi = parseFloat(document.getElementById('economiaRoi').value || 0);
+                const receitaRoi = parseFloat(document.getElementById('receitaRoi').value || 0);
+                const custosRoi = parseFloat(document.getElementById('custosRoi').value || 0);
+                const beneficioMensal = economiaRoi + receitaRoi - custosRoi;
+                
+                const roiData = [
+                    ['📈 ANÁLISE DE ROI PARA O CLIENTE', '', '', '', ''],
+                    ['', '', '', '', ''],
+                    ['💰 Dados Financeiros do Projeto', '', '', '', ''],
+                    ['Investimento Total:', `R$ ${investimento.toLocaleString('pt-BR')}`, '', '', ''],
+                    ['Economia Mensal:', `R$ ${economiaRoi.toLocaleString('pt-BR')}`, '', '', ''],
+                    ['Aumento Receita Mensal:', `R$ ${receitaRoi.toLocaleString('pt-BR')}`, '', '', ''],
+                    ['Custos Operacionais:', `R$ ${custosRoi.toLocaleString('pt-BR')}`, '', '', ''],
+                    ['Benefício Líquido Mensal:', `R$ ${beneficioMensal.toLocaleString('pt-BR')}`, '', '', ''],
+                    ['', '', '', '', ''],
+                    ['📊 Projeção de Retorno sobre Investimento', '', '', '', ''],
+                    ['', '', '', '', ''],
+                    ['Período', 'Benefício Acumulado', 'ROI (%)', 'Status', 'Observações'],
+                    ['6 meses', `R$ ${(beneficioMensal * 6).toLocaleString('pt-BR')}`, `${((beneficioMensal * 6 - investimento) / investimento * 100).toFixed(1)}%`, beneficioMensal * 6 > investimento ? '✅ Positivo' : '⏳ Em andamento', 'Primeiro marco'],
+                    ['12 meses', `R$ ${(beneficioMensal * 12).toLocaleString('pt-BR')}`, `${((beneficioMensal * 12 - investimento) / investimento * 100).toFixed(1)}%`, beneficioMensal * 12 > investimento ? '✅ Positivo' : '⏳ Em andamento', 'ROI consolidado'],
+                    ['24 meses', `R$ ${(beneficioMensal * 24).toLocaleString('pt-BR')}`, `${((beneficioMensal * 24 - investimento) / investimento * 100).toFixed(1)}%`, '✅ Positivo', 'Retorno máximo'],
+                    ['', '', '', '', ''],
+                    ['📋 Resumo da Análise', '', '', '', ''],
+                    ['Payback Estimado:', beneficioMensal > 0 ? `${(investimento / beneficioMensal).toFixed(1)} meses` : 'Não calculável', '', '', ''],
+                    ['Benefício Anual:', `R$ ${(beneficioMensal * 12).toLocaleString('pt-BR')}`, '', '', ''],
+                    ['Múltiplo do Investimento (2 anos):', `${(beneficioMensal * 24 / investimento).toFixed(1)}x`, '', '', ''],
+                    ['', '', '', '', ''],
+                    ['💡 JUSTIFICATIVA PARA O CLIENTE:', '', '', '', ''],
+                    [`• O investimento de R$ ${investimento.toLocaleString('pt-BR')} se paga em ${beneficioMensal > 0 ? Math.ceil(investimento / beneficioMensal) : 'N/A'} meses`, '', '', '', ''],
+                    [`• Benefício líquido mensal de R$ ${beneficioMensal.toLocaleString('pt-BR')}`, '', '', '', ''],
+                    [`• ROI de ${((beneficioMensal * 12 - investimento) / investimento * 100).toFixed(1)}% no primeiro ano`, '', '', '', '']
+                ];
+                
+                const wsROI = XLSX.utils.aoa_to_sheet(roiData);
+                wsROI['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 25 }];
+                XLSX.utils.book_append_sheet(wb, wsROI, '📈 ROI do Cliente');
+                
+                // ABA 5: Proposta Comercial
+                const propostaData = [
+                    ['📄 PROPOSTA COMERCIAL - PROJETO POWER BI', '', '', ''],
+                    ['', '', '', ''],
+                    [`📅 Data: ${new Date().toLocaleDateString('pt-BR')}`, '', '', ''],
+                    ['👤 Cliente: [NOME DO CLIENTE]', '', '', ''],
+                    ['📊 Projeto: [NOME DO PROJETO POWER BI]', '', '', ''],
+                    ['', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    ['🎯 OBJETIVO DO PROJETO', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    ['Desenvolver uma solução completa de Business Intelligence utilizando Power BI,', '', '', ''],
+                    ['proporcionando análises avançadas e insights estratégicos para tomada de decisão.', '', '', ''],
+                    ['', '', '', ''],
+                    ['🚀 PACOTES DISPONÍVEIS', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    ['', '', '', ''],
+                    ['📦 PACOTE ESSENCIAL', '', '', ''],
+                    [`💰 Investimento: ${document.getElementById('essentialPrice')?.textContent || 'R$ 0'}`, '', '', ''],
+                    ['✅ Dashboard básico com visualizações padrão', '', '', ''],
+                    ['✅ Até 3 fontes de dados', '', '', ''],
+                    ['✅ Relatórios operacionais essenciais', '', '', ''],
+                    ['✅ Suporte técnico por 30 dias', '', '', ''],
+                    ['', '', '', ''],
+                    ['🏆 PACOTE PROFISSIONAL (RECOMENDADO)', '', '', ''],
+                    [`💰 Investimento: ${document.getElementById('professionalPrice')?.textContent || 'R$ 0'}`, '', '', ''],
+                    ['✅ Dashboard completo e interativo', '', '', ''],
+                    ['✅ Até 7 fontes de dados integradas', '', '', ''],
+                    ['✅ Visualizações avançadas e personalizadas', '', '', ''],
+                    ['✅ Cálculos DAX intermediários', '', '', ''],
+                    ['✅ Suporte técnico por 60 dias', '', '', ''],
+                    ['✅ 1 revisão gratuita do projeto', '', '', ''],
+                    ['', '', '', ''],
+                    ['💎 PACOTE ENTERPRISE', '', '', ''],
+                    [`💰 Investimento: ${document.getElementById('enterprisePrice')?.textContent || 'R$ 0'}`, '', '', ''],
+                    ['✅ Solução completa e totalmente customizada', '', '', ''],
+                    ['✅ Fontes de dados ilimitadas', '', '', ''],
+                    ['✅ Visualizações 100% personalizadas', '', '', ''],
+                    ['✅ DAX avançado e otimizações de performance', '', '', ''],
+                    ['✅ Automação completa com Gateway', '', '', ''],
+                    ['✅ Suporte técnico por 90 dias', '', '', ''],
+                    ['✅ 3 revisões gratuitas do projeto', '', '', ''],
+                    ['✅ Treinamento completo para a equipe', '', '', ''],
+                    ['', '', '', ''],
+                    ['💎 VALOR PERCEBIDO', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    [`🎯 Benefício mensal estimado: ${document.getElementById('perceivedValueAmount')?.textContent || 'R$ 0'}`, '', '', ''],
+                    [`📈 ROI em 12 meses: ${document.getElementById('roi12months')?.textContent || '0%'}`, '', '', ''],
+                    [`⏱️ Payback: ${beneficioMensal > 0 ? Math.ceil(investimento / beneficioMensal) : 'N/A'} meses`, '', '', ''],
+                    ['', '', '', ''],
+                    ['📋 CONDIÇÕES COMERCIAIS', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    ['💳 Pagamento: 50% no início + 50% na entrega', '', '', ''],
+                    [`⏰ Prazo de entrega: ${document.getElementById('prazo').value} dias úteis`, '', '', ''],
+                    ['🛡️ Garantia: 30 dias para correções e ajustes', '', '', ''],
+                    ['📅 Proposta válida por: 15 dias corridos', '', '', ''],
+                    ['', '', '', ''],
+                    ['📞 PRÓXIMOS PASSOS', '', '', ''],
+                    ['═══════════════════════════════════════════════════════════════', '', '', ''],
+                    ['1️⃣ Aprovação da proposta pelo cliente', '', '', ''],
+                    ['2️⃣ Assinatura do contrato de prestação de serviços', '', '', ''],
+                    ['3️⃣ Pagamento da primeira parcela (50%)', '', '', ''],
+                    ['4️⃣ Início do desenvolvimento do projeto', '', '', ''],
+                    ['5️⃣ Reuniões de acompanhamento semanais', '', '', ''],
+                    ['6️⃣ Entrega e treinamento da solução', '', '', ''],
+                    ['', '', '', ''],
+                    ['✅ ESTA PROPOSTA FOI GERADA PELO SISTEMA PREMIUM DE PRECIFICAÇÃO', '', '', '']
+                ];
+                
+                const wsProposta = XLSX.utils.aoa_to_sheet(propostaData);
+                wsProposta['!cols'] = [{ wch: 80 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+                
+                // Mesclar células para layout da proposta
+                wsProposta['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+                    { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+                    { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+                    { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } },
+                    { s: { r: 6, c: 0 }, e: { r: 6, c: 3 } },
+                    { s: { r: 7, c: 0 }, e: { r: 7, c: 3 } },
+                    { s: { r: 8, c: 0 }, e: { r: 8, c: 3 } },
+                    { s: { r: 9, c: 0 }, e: { r: 9, c: 3 } },
+                    { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } }
+                ];
+                
+                XLSX.utils.book_append_sheet(wb, wsProposta, '📄 Proposta Comercial');
+                
+                // Configurar propriedades do workbook
+                wb.Props = {
+                    Title: "Calculadora de Precificação Premium - Power BI",
+                    Subject: "Relatório Completo de Precificação",
+                    Author: "Sistema Premium",
+                    CreatedDate: new Date()
+                };
+                
+                // Gerar arquivo
+                const fileName = `Calculadora_PowerBI_Premium_${new Date().toISOString().slice(0,10)}.xlsx`;
+                
+                console.log('💾 Salvando arquivo:', fileName);
+                XLSX.writeFile(wb, fileName);
+                
+                showNotification('🎉 Arquivo Excel exportado com sucesso! Arquivo com 5 abas profissionais baixado.', 'success');
+                console.log('✅ Exportação concluída com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro na exportação:', error);
+                showNotification(`❌ Erro na exportação: ${error.message}`, 'error');
+            }
+        }
+
+        // ========================================
+        // FUNÇÕES AUXILIARES
+        // ========================================
+        
+        function saveConfiguration() {
+            try {
+                const config = {
+                    experiencia: document.getElementById('experiencia').value,
+                    regiao: document.getElementById('regiao').value,
+                    especialidades: Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value),
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log('Configuração:', config);
+                showNotification('✅ Configurações salvas com sucesso!', 'success');
+                
+            } catch (error) {
+                showNotification(`❌ Erro ao salvar: ${error.message}`, 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            
+            const colors = {
+                success: '#27ae60',
+                error: '#e74c3c',
+                info: '#3498db',
+                warning: '#f39c12'
+            };
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type]};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 400px;
+                font-weight: 500;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; margin-left: 10px;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOutRight 0.3s ease forwards';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ========================================
+        // INICIALIZAÇÃO
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando Calculadora Premium...');
+            
+            // Atualizar valores iniciais
+            updateBaseValues();
+            
+            // Verificar XLSX
+            setTimeout(() => {
+                if (typeof XLSX !== 'undefined') {
+                    console.log('✅ XLSX carregado com sucesso');
+                    showNotification('✅ Sistema carregado! Exportação Excel com 5 abas profissionais disponível.', 'success');
+                } else {
+                    console.error('❌ XLSX não carregou');
+                    showNotification('❌ Erro: Biblioteca Excel não carregou. Recarregue a página.', 'error');
+                }
+            }, 1000);
+            
+            // Adicionar listeners para mudanças
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', updateBaseValues);
+            });
+            
+            console.log('✅ Calculadora Premium inicializada');
+        });
+
+        // Adicionar estilos para animações
+        const animationStyles = document.createElement('style');
+        animationStyles.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(animationStyles);
+    </script>
+</body>
+</html>
